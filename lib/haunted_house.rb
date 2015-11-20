@@ -4,33 +4,30 @@ require "rexml/document"
 
 require "haunted_house/device"
 
-# FIXME: this is dangerous
-OpenSSL::SSL.send(:remove_const, :VERIFY_PEER)
-OpenSSL::SSL::VERIFY_PEER = OpenSSL::SSL::VERIFY_NONE
-
 class HauntedHouse
   def initialize(address, user, password)
     @address  = address
     @user     = user
     @password = password
     @devices  = [ ]
-    
+
     lookup_devices
   end
-  
+
   def request(url)
     open( "#{@address}/rest/#{url}",
-          :http_basic_authentication => [@user, @password] ) do |data|
+          :http_basic_authentication => [@user, @password],
+          :ssl_verify_mode           => OpenSSL::SSL::VERIFY_NONE ) do |data|
       yield data if block_given?
     end
   end
-  
+
   def device(name)
     @devices.find { |device| device.name == name }
   end
-  
+
   private
-  
+
   def lookup_devices
     request("nodes") do |data|
       xml = REXML::Document.new(data)
